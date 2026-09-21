@@ -8,16 +8,11 @@ body{margin:0;font:13px system-ui;background:#010409;color:#e6edf3;height:100vh;
 iframe{border:0;height:100%}
 #page{flex:1}
 #side{width:380px;border-left:2px solid #a371f7}
-</style></head>
-<body>
-<div id="bar">🦉 <b>ATHELGARD SIDECAR — live demo</b> · left: fake Holmes challenge page (flags planted) · right: the real sidepanel UI · parent frame plays "background.js" (squad bus hub)</div>
-<div id="split">
-  <iframe id="page" src="demo/fake-page.html"></iframe>
-  <iframe id="side" src="demo/demo-sidecar.html"></iframe>
-</div>
+</style>
 <script>
-// ---- Mock extension runtime. The parent tab plays background.js:
-// routes messages between frames (squad bus) and owns shared storage state.
+// ---- Mock extension runtime, defined BEFORE iframes load. ----
+// The parent tab plays background.js: routes messages between frames
+// (squad bus) and owns shared storage state.
 const listeners = { page: [], side: [] };
 const store = { local: {}, session: {} };
 const mkStorage = b => ({
@@ -34,3 +29,32 @@ function hub(m, from) {
     deliver('side', { type: 'FLAGS_UPDATED', flags: arr });
     return;
   }
+  if (m.type === 'APPROVE_FLAG' || m.type === 'DISCARD_FLAG') {
+    const arr = store.local.stagedFlags || [];
+    const f = arr.find(x => x.flag === m.flag);
+    if (f) f.status = m.type === 'APPROVE_FLAG' ? 'APPROVED' : 'DISCARDED';
+    deliver('side', { type: 'FLAGS_UPDATED', flags: arr });
+    return;
+  }
+  const to = from === 'page' ? 'side' : 'page';
+  deliver(to, m);
+}
+window.setChrome = function (kind) {
+  return {
+    storage: { local: mkStorage('local'), session: mkStorage('session') },
+    runtime: {
+      sendMessage: (m) => { hub(m, kind); return Promise.resolve(); },
+      onMessage: { addListener: (f) => listeners[kind].push(f) }
+    },
+    tabs: { query: () => Promise.resolve([{ id: 1 }]), sendMessage: () => Promise.resolve() }
+  };
+};
+</script>
+</head>
+<body>
+<div id="bar">🦉 <b>ATHELGARD SIDECAR — live demo</b> · left: fake Holmes challenge page (flags planted) · right: the real sidepanel UI · parent frame plays "background.js" (squad bus hub)</div>
+<div id="split">
+  <iframe id="page" src="demo/fake-page.html"></iframe>
+  <iframe id="side" src="demo/demo-sidecar.html"></iframe>
+</div>
+</body></html>
