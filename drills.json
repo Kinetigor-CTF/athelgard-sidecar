@@ -1,0 +1,478 @@
+{
+ "linux": [
+  {
+   "q": "Which command shows a long listing with human-readable sizes and hidden files?",
+   "opts": [
+    "ls -lh",
+    "ls -la",
+    "ls -lah",
+    "ls -h"
+   ],
+   "a": 2,
+   "why": "-l long, -a all (hidden), -h human sizes."
+  },
+  {
+   "q": "What does chmod 4755 file do?",
+   "opts": [
+    "RWX for owner, RX group/other",
+    "Sets SUID bit",
+    "Sets sticky bit",
+    "Recursive change"
+   ],
+   "a": 1,
+   "why": "4xxx = SUID: file runs with owner privileges — classic privesc vector."
+  },
+  {
+   "q": "Find SUID binaries on a system:",
+   "opts": [
+    "find / -perm -4000 2>/dev/null",
+    "find / -suid",
+    "ls -suid /",
+    "grep suid /etc/passwd"
+   ],
+   "a": 0,
+   "why": "-perm -4000 matches SUID; GTFOBins tells you which are exploitable."
+  },
+  {
+   "q": "Which file lists user shells for login?",
+   "opts": [
+    "/etc/shells",
+    "/etc/passwd",
+    "/etc/login",
+    "/bin/bashrc"
+   ],
+   "a": 1,
+   "why": "/etc/passwd: user:x:uid:gid:comment:home:shell."
+  },
+  {
+   "q": "Cron job running a world-writable script as root = ?",
+   "opts": [
+    "Nothing, cron is safe",
+    "Privesc via editing the script",
+    "Only DoS possible",
+    "Needs kernel exploit"
+   ],
+   "a": 1,
+   "why": "Writable path executed by root → put your payload in it."
+  },
+  {
+   "q": "What does '2>/dev/null' do?",
+   "opts": [
+    "Deletes stderr",
+    "Redirects stderr to null device",
+    "Hides stdout",
+    "Restarts process"
+   ],
+   "a": 1,
+   "why": "Silence permission-denied noise during recursive finds."
+  }
+ ],
+ "networking": [
+  {
+   "q": "Which layer do IP addresses live on?",
+   "opts": [
+    "Data link",
+    "Transport",
+    "Network",
+    "Application"
+   ],
+   "a": 2,
+   "why": "Layer 3: routing, subnets, ICMP."
+  },
+  {
+   "q": "Default port for DNS?",
+   "opts": [
+    "21",
+    "53",
+    "80",
+    "443"
+   ],
+   "a": 1,
+   "why": "53 TCP+UDP; zone transfers (AXFR) walk on TCP."
+  },
+  {
+   "q": "What does TTL tell you in a ping reply?",
+   "opts": [
+    "Packet size",
+    "Hop count / OS hint",
+    "Encryption strength",
+    "Bandwidth"
+   ],
+   "a": 1,
+   "why": "TTL 64=Linux, 128=Windows common starting values."
+  },
+  {
+   "q": "Which protocol translates IP to MAC?",
+   "opts": [
+    "DNS",
+    "DHCP",
+    "ARP",
+    "NAT"
+   ],
+   "a": 2,
+   "why": "ARP: 'who-has' broadcasts — poisonable on flat networks."
+  },
+  {
+   "q": "A /24 gives how many usable hosts?",
+   "opts": [
+    "255",
+    "256",
+    "254",
+    "512"
+   ],
+   "a": 2,
+   "why": "2^8 - 2 (network + broadcast) = 254."
+  },
+  {
+   "q": "SSH tunnels a local port to a target through a jump host = ?",
+   "opts": [
+    "-L local forward",
+    "-R reverse",
+    "-D dynamic only",
+    "-X X11"
+   ],
+   "a": 0,
+   "why": "ssh -L localPort:target:targetPort user@jumphost."
+  }
+ ],
+ "nmap": [
+  {
+   "q": "Fastest sane full-subnet discovery scan?",
+   "opts": [
+    "nmap -sV 10.10.10.0/24",
+    "nmap -sn 10.10.10.0/24",
+    "nmap -sS -p- 10.10.10.0/24",
+    "nmap -O 10.10.10.0/24"
+   ],
+   "a": 1,
+   "why": "-sn ping sweep: no port scans, just host discovery."
+  },
+  {
+   "q": "What does -sV do?",
+   "opts": [
+    "Scans version 2",
+    "Detects service/version banners",
+    "Verbose output",
+    "Vuln scan"
+   ],
+   "a": 1,
+   "why": "Version detection feeds searchsploit."
+  },
+  {
+   "q": "SYN scan flag combo is?",
+   "opts": [
+    "-sT",
+    "-sS",
+    "-sU",
+    "-sA"
+   ],
+   "a": 1,
+   "why": "-sS: half-open, stealthier, no full handshake."
+  },
+  {
+   "q": "Scripts category for vulnerability detection?",
+   "opts": [
+    "--script safe",
+    "--script vuln",
+    "--script brute",
+    "-sC"
+   ],
+   "a": 1,
+   "why": "--script vuln runs vulners family; -sC runs default."
+  },
+  {
+   "q": "All 65535 TCP ports, minimum flags?",
+   "opts": [
+    "-p-",
+    "-p 1-65535",
+    "--all-ports",
+    "-A"
+   ],
+   "a": 0,
+   "why": "-p- shorthand; takes time, do it once per box."
+  },
+  {
+   "q": "UDP scan essential flag?",
+   "opts": [
+    "-sU",
+    "-su",
+    "--udp-all",
+    "-sX"
+   ],
+   "a": 0,
+   "why": "-sU; slow — top ports first (--top-ports 100)."
+  }
+ ],
+ "web": [
+  {
+   "q": "Which header carries session state?",
+   "opts": [
+    "Authorization",
+    "Cookie",
+    "Referer",
+    "Origin"
+   ],
+   "a": 1,
+   "why": "Cookies: steal or fixate them = account access."
+  },
+  {
+   "q": "SQLi test payload for string params?",
+   "opts": [
+    "' OR '1'='1",
+    "; DROP TABLE",
+    "1=1 UNION",
+    "admin'-- "
+   ],
+   "a": 3,
+   "why": "admin'-- comments out the password check — classic auth bypass."
+  },
+  {
+   "q": "First tool to see/modify every request?",
+   "opts": [
+    "Wireshark",
+    "Burp Suite proxy",
+    "Nmap",
+    "Hydra"
+   ],
+   "a": 1,
+   "why": "Web Proxies module exists for this reason."
+  },
+  {
+   "q": "SSTI detection string?",
+   "opts": [
+    "{{7*7}}",
+    "<script>1</script>",
+    "' OR 1=1",
+    "../../etc/passwd"
+   ],
+   "a": 0,
+   "why": "Template engines evaluate {{7*7}} → 49 in the response."
+  },
+  {
+   "q": "403 on /admin but 200 on /admin/ = ?",
+   "opts": [
+    "Server bug",
+    "Trailing-slash bypass / route normalization",
+    "DNS issue",
+    "HTTPS required"
+   ],
+   "a": 1,
+   "why": "Normalization mismatch — classic path-confusion bypass."
+  },
+  {
+   "q": "JWT alg:none attack does what?",
+   "opts": [
+    "Cracks signature",
+    "Removes signature verification",
+    "Changes expiry only",
+    "Encrypts token"
+   ],
+   "a": 1,
+   "why": "alg:none → server may skip verification: forge any claim."
+  }
+ ],
+ "privesc": [
+  {
+   "q": "LinPEAS output color for HIGH probability privesc?",
+   "opts": [
+    "Yellow",
+    "Red/Green",
+    "Blue",
+    "No colors"
+   ],
+   "a": 1,
+   "why": "Red/yellow = 95%/high-probability vectors."
+  },
+  {
+   "q": "sudo -l shows (ALL) NOPASSWD: /bin/vim = ?",
+   "opts": [
+    "Nothing exploitable",
+    "sudo vim → :!/bin/sh root shell",
+    "Edit /etc/passwd only",
+    "Reboot needed"
+   ],
+   "a": 1,
+   "why": "Any sudo'ed editor/binary with escape = root (GTFOBins)."
+  },
+  {
+   "q": "Kernel exploit decision order?",
+   "opts": [
+    "Kernel first",
+    "Enumerated misconfig first, kernel last",
+    "Same priority",
+    "Never kernel"
+   ],
+   "a": 1,
+   "why": "Misconfigs are quieter; kernel exploits crash boxes."
+  },
+  {
+   "q": "Windows: 'whoami /priv' shows SeImpersonatePrivilege = ?",
+   "opts": [
+    "Useless",
+    "Potato-family privesc to SYSTEM",
+    "Only RCE",
+    "Token view only"
+   ],
+   "a": 1,
+   "why": "PrintSpoofer/JuicyPotato — service accounts goldmine."
+  },
+  {
+   "q": "Writable /etc/passwd means?",
+   "opts": [
+    "Nothing modern",
+    "Replace root hash → su root",
+    "Faster boot",
+    "Log rotation"
+   ],
+   "a": 1,
+   "why": "Modern shadow shadowing aside, writable passwd entries still bite legacy setups."
+  },
+  {
+   "q": "Capabilities alternative to SUID: tar cap_setuid+ep = ?",
+   "opts": [
+    "Safe",
+    "Exploit: tar writes with root uid",
+    "Compression only",
+    "Needs reboot"
+   ],
+   "a": 1,
+   "why": "getcap -r / 2>/dev/null → file caps are stealth SUIDs."
+  }
+ ],
+ "ad": [
+  {
+   "q": "AD authentication protocol in modern domains?",
+   "opts": [
+    "NTLM only",
+    "Kerberos",
+    "RADIUS",
+    "LDAP simple"
+   ],
+   "a": 1,
+   "why": "Kerberos: tickets, SPNs, delegation — the whole attack surface."
+  },
+  {
+   "q": "DCSync requires which rights?",
+   "opts": [
+    "Any account",
+    "DS-Replication-Get-Changes on domain",
+    "Local admin only",
+    "Domain guest"
+   ],
+   "a": 1,
+   "why": "Replicate directory changes = pull every hash via impacket secretsdump."
+  },
+  {
+   "q": "Golden Ticket ingredient?",
+   "opts": [
+    "Any user hash",
+    "KRBTGT account hash",
+    "Domain SID only",
+    "CA private key"
+   ],
+   "a": 1,
+   "why": "KRBTGT signs all TGTs — forge tickets until password changes twice."
+  },
+  {
+   "q": "BloodHound shows shortest path via what data?",
+   "opts": [
+    "pcap",
+    "Sharphound JSON ingest",
+    "Event logs",
+    "DNS"
+   ],
+   "a": 1,
+   "why": "Sharphound collects edges: MemberOf, AdminTo, CanRDP..."
+  },
+  {
+   "q": "RBCD abuse needs control of?",
+   "opts": [
+    "DC itself",
+    "A computer account with write access to another's msDS-AllowedToActOnBehalfOfOtherIdentity",
+    "Any group",
+    "DNS server"
+   ],
+   "a": 1,
+   "why": "Resource-based constrained delegation: write the attribute, forge S4U."
+  },
+  {
+   "q": "Kerberoasting targets?",
+   "opts": [
+    "DCs",
+    "User accounts with SPNs",
+    "OUs",
+    "GPOs"
+   ],
+   "a": 1,
+   "why": "Request RC4-encrypted TGS for SPN account → offline crack."
+  }
+ ],
+ "forensics": [
+  {
+   "q": "Volatility3 plugin for process tree?",
+   "opts": [
+    "pslist",
+    "pstree",
+    "windows.pstree",
+    "procs"
+   ],
+   "a": 2,
+   "why": "Vol3 namespaced plugins: windows.pstree, windows.netscan."
+  },
+  {
+   "q": "Windows event log format?",
+   "opts": [
+    ".log",
+    ".evtx",
+    ".json",
+    ".xml only"
+   ],
+   "a": 1,
+   "why": "EVTX: Security 4624/4625 logons, Sysmon 1 process creation."
+  },
+  {
+   "q": "Auditd hex args (aN=75736572) decode to?",
+   "opts": [
+    "root",
+    "user",
+    "admin",
+    "sudo"
+   ],
+   "a": 1,
+   "why": "Hex ASCII — decode before hunting (Holmes: Poisoned Branch)."
+  },
+  {
+   "q": "First step with a 3GB memory image?",
+   "opts": [
+    "strings grep",
+    "Volatility3 imageinfo/os detection",
+    "Hex editor",
+    "Open in notepad"
+   ],
+   "a": 1,
+   "why": "Identify profile/OS first, then targeted plugins."
+  },
+  {
+   "q": "NTDS.dit holds?",
+   "opts": [
+    "DNS records",
+    "AD account hashes",
+    "Firewall rules",
+    "Emails"
+   ],
+   "a": 1,
+   "why": "Extract with impacket secretsdump + SYSTEM hive."
+  },
+  {
+   "q": "Wayback CDX API tells you?",
+   "opts": [
+    "Site owner",
+    "Every archived snapshot of a URL",
+    "DNS history",
+    "Certificates"
+   ],
+   "a": 1,
+   "why": "Whisper Chain: 18 commands recovered from Wayback (Holmes 2026)."
+  }
+ ]
+}
