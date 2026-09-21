@@ -19,33 +19,47 @@
   <section id="chat">
     <div id="log"></div>
     <form id="composer">
-      <input id="input" placeholder="Talk to Athelgard..." autocomplete="off">
+      <input id="input" placeholder="Talk to Athelgard... (!scan, !wayback <url>, !hashid <hex>)" autocomplete="off">
       <button type="submit">Send</button>
     </form>
   </section>
+  <script src="skills.js"></script>
   <script src="sidepanel.js"></script>
   <script>
-  // Demo brain: canned reasoning + the REAL playbook matcher from sidepanel.js.
-  // (sidepanel.js defines playbookHints globally; we reuse it, only the LLM call is mocked.)
+  // Demo brain: canned reasoning + REAL playbook matcher + REAL skills module.
   window.think = async (userText, ctx) => {
+    const S = window.athelgard.skills;
     const flags = ctx.flags || [];
+
+    // --- operator commands: real skills, no LLM needed ---
+    if (/^!scan/.test(userText)) {
+      const iocs = S.scan((ctx.textHead || '') + ' ' + (ctx.selection || '') + ' ' + flags.join(' '));
+      let r = S.report(iocs);
+      if (iocs.sha256?.length) r += '\n' + iocs.sha256.map(h => 'sha256 ' + h.slice(0,12) + '... -> ' + S.hashid(h)).join('\n');
+      if (iocs.cronTs?.length) r += '\nTIMELINE ANCHORS: ' + iocs.cronTs.join(' | ');
+      return r + '\nFlags auto-staged above. Approve to arm clipboard.';
+    }
+    if (/^!wayback\s+(\S+)/.test(userText)) {
+      const hits = await S.wayback(userText.match(/^!wayback\s+(\S+)/)[1]);
+      if (!hits.length) return 'Wayback CDX: nothing archived for that URL.';
+      return 'Wayback CDX hits:\n' + hits.map(h => h.ts + ' ' + h.status + ' ' + h.url).join('\n');
+    }
+    if (/^!hashid\s+([a-fA-F0-9]+)/.test(userText)) {
+      return S.hashid(userText.match(/^!hashid\s+([a-fA-F0-9]+)/)[1]);
+    }
+
+    // --- playbook-aware chat ---
     const hints = await playbookHints(ctx);
-    await new Promise(r => setTimeout(r, 700));
+    await new Promise(r => setTimeout(r, 500));
     if (/status|report|how/i.test(userText)) {
       return 'Readiness report, Captain. Page linked: "' + (ctx.title || 'unknown') + '". ' +
         flags.length + ' flag(s) visible. ' +
-        (hints ? 'Playbook matched — see below. ' : 'No playbook match for this page. ') +
-        'Pipeline and vault intact; nothing sits in chat anymore.';
+        (hints ? 'Playbook matched — ask me "playbook?" for the solve path. ' : 'No playbook match. ') +
+        'Tools loaded: !scan, !wayback <url>, !hashid <hex>. Pipeline and vault intact.';
     }
-    if (hints) {
-      return 'Playbook hit. This page smells like a Holmes 2026 scenario. ' +
-        hints.slice(0, 900) + (hints.length > 900 ? '...' : '') +
-        (flags.length ? ' FLAG: ' + flags[0] + ' — staged, awaiting your approval.' : '');
-    }
-    if (flags.length) {
-      return 'Scanning. FLAG: ' + flags[0] + ' — staged. Approve below and it is on your clipboard.';
-    }
-    return 'Context received: "' + (ctx.title || 'no page') + '". No flags in view. Select text and I will re-scan.';
+    if (/playbook/i.test(userText) && hints) return 'Playbook hit: ' + hints.slice(0, 1200);
+    if (flags.length) return 'Scanning. FLAG: ' + flags[0] + ' — staged, awaiting approval.';
+    return 'Context: "' + (ctx.title || 'no page') + '". No flags in view. Try !scan.';
   };
   navigator.clipboard.writeText = (t) => { console.log('[demo] clipboard:', t); return Promise.resolve(); };
   </script>
