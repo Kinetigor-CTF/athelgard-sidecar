@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Athelgard Sidecar — LIVE DEMO</title>
+<style>
+body{margin:0;font:13px system-ui;background:#010409;color:#e6edf3;height:100vh;display:flex;flex-direction:column}
+#bar{padding:6px 12px;background:#161b22;border-bottom:1px solid #30363d;font-size:12px}
+#bar b{color:#a371f7}
+#split{flex:1;display:flex;min-height:0}
+iframe{border:0;height:100%}
+#page{flex:1}
+#side{width:380px;border-left:2px solid #a371f7}
+</style></head>
+<body>
+<div id="bar">🦉 <b>ATHELGARD SIDECAR — live demo</b> · left: fake Holmes challenge page (flags planted) · right: the real sidepanel UI · her brain is mocked, pipeline + memory are real code</div>
+<div id="split">
+  <iframe id="page" src="demo/fake-page.html"></iframe>
+  <iframe id="side" src="demo/demo-sidecar.html"></iframe>
+</div>
+<script>
+// Minimal mock of chrome.* so the REAL sidepanel.js/content.js logic runs unmodified.
+const listeners = { page: [], side: [] };
+const store = { local: {}, session: {} };
+const mkStorage = b => ({
+  get: (d) => Promise.resolve({ ...d, ...(store[b]||{}) }),
+  set: (p) => { Object.assign(store[b] ||= {}, p); return Promise.resolve(); }
+});
+function makeChrome(kind) {
+  return {
+    storage: { local: mkStorage('local'), session: mkStorage('session') },
+    runtime: {
+      sendMessage: (m) => { deliver(kind==='page'?'side':'page', m); return Promise.resolve(); },
+      onMessage: { addListener: (f) => listeners[kind].push(f) }
+    },
+    tabs: { query: () => Promise.resolve([{ id: 1 }]), sendMessage: () => Promise.resolve() }
+  };
+}
+function deliver(kind, m) { listeners[kind].forEach(f => { try { f(m, {}, ()=>{}); } catch(e){} }); }
+window.setChrome = makeChrome;
+window.deliverTo = deliver;
+</script>
+</body></html>
