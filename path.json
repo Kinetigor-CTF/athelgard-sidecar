@@ -1,0 +1,158 @@
+{
+ "updated": "2026-09-21",
+ "classic_ranks": [
+  {
+   "rank": "Noob",
+   "need": "0% ownership"
+  },
+  {
+   "rank": "Script Kiddie",
+   "need": ">5% ownership"
+  },
+  {
+   "rank": "Hacker",
+   "need": ">20% ownership",
+   "unlocks": "Fortresses"
+  },
+  {
+   "rank": "Pro Hacker",
+   "need": ">45%"
+  },
+  {
+   "rank": "Elite Hacker",
+   "need": ">70%"
+  },
+  {
+   "rank": "Guru",
+   "need": ">90%"
+  },
+  {
+   "rank": "Omniscient",
+   "need": "100%"
+  }
+ ],
+ "xp_ladder": "Beginner → Apprentice → Skilled → Professional → Master → Prodigy → Grandmaster (new 2025-26 XP system; levels from Labs + Academy XP)",
+ "certs": [
+  {
+   "abbr": "CJCA",
+   "name": "Junior Cybersecurity Associate",
+   "level": "Beginner",
+   "move": "sit early — validates the Tier-0 fundamentals"
+  },
+  {
+   "abbr": "CPTS",
+   "name": "Penetration Testing Specialist",
+   "level": "Intermediate",
+   "move": "flagship offensive cert — 28 modules"
+  },
+  {
+   "abbr": "CWES",
+   "name": "Web Exploitation Specialist",
+   "level": "Intermediate",
+   "move": "replaced CBBH — web track"
+  },
+  {
+   "abbr": "CDSA",
+   "name": "Defensive Security Analyst",
+   "level": "Intermediate",
+   "move": "SOC/blue track — 15 modules"
+  },
+  {
+   "abbr": "CAPE",
+   "name": "Active Directory Pentesting Expert",
+   "level": "Expert",
+   "move": "replaced CACE"
+  },
+  {
+   "abbr": "CWEE",
+   "name": "Web Exploitation Expert",
+   "level": "Expert"
+  },
+  {
+   "abbr": "CWPE",
+   "name": "Wi-Fi Pentesting Expert",
+   "level": "Expert"
+  },
+  {
+   "abbr": "COAE",
+   "name": "Offensive AI Expert",
+   "level": "Expert",
+   "move": "co-developed with Google"
+  }
+ ],
+ "beginner_track": [
+  {
+   "step": 1,
+   "module": "Linux Fundamentals",
+   "domain": "linux",
+   "why": "everything runs on this"
+  },
+  {
+   "step": 2,
+   "module": "Intro to Networking",
+   "domain": "networking",
+   "why": "you can't attack what you can't reach"
+  },
+  {
+   "step": 3,
+   "module": "Web Requests",
+   "domain": "web",
+   "why": "80% of attack surface is HTTP"
+  },
+  {
+   "step": 4,
+   "module": "Network Enumeration with Nmap",
+   "domain": "nmap",
+   "why": "cartography before conquest"
+  },
+  {
+   "step": 5,
+   "module": "Windows Fundamentals",
+   "domain": "windows",
+   "why": "the enterprise is Windows"
+  },
+  {
+   "step": 6,
+   "module": "Bash Scripting + Python",
+   "domain": "scripting",
+   "why": "manual work does not scale"
+  },
+  {
+   "step": 7,
+   "module": "Using Web Proxies",
+   "domain": "web",
+   "why": "see and modify every request"
+  },
+  {
+   "step": 8,
+   "module": "Metasploit Framework",
+   "domain": "exploitation",
+   "why": "first rides, then driving"
+  },
+  {
+   "step": 9,
+   "module": "Linux & Windows PrivEsc",
+   "domain": "privesc",
+   "why": "foothold != compromise"
+  },
+  {
+   "step": 10,
+   "module": "Active Directory fundamentals",
+   "domain": "ad",
+   "why": "the CAPE highway"
+  }
+ ],
+ "pro_labs": [
+  "Dante",
+  "Zephyr",
+  "Offshore",
+  "Ifrit",
+  "RastaLabs",
+  "Wutai",
+  "P.O.O.",
+  "Unintended",
+  "Wanderer",
+  "Shinra"
+ ],
+ "operator_advice": "CJCA after step ~5. CDSA or CPTS track after step 10. Machines in parallel: easy retired boxes with writeups, take notes INTO the vault."
+}
