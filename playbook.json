@@ -1,0 +1,177 @@
+{
+ "source": "Holmes CTF 2026: The Reichenbach Directive (HTB event 3504, Sept 17-21 2026). Compiled from TheNorthStars-CTF writeups (github.com/TheNorthStars-CTF/Holmes-CTF-2026-Write-ups) and nyaks1/holmes-ctf-2026.",
+ "event_shape": "10 numbered Sherlock scenarios, released in drops over 5 days. Each scenario is one evidence bundle with N question-style flags (bare values: paths, hashes, names, coordinates) plus sometimes a final HTB{...} directive flag. ~6,700 teams registered. NOTE: '36 flags' is unverified — documented counts sum far higher.",
+ "answer_hygiene": "Question-style flags take BARE values (a path, hash, hostname, coords) — do NOT wrap as HTB{...}. Never invent HTB{IOC} wraps. IOC is not a flag. Read the question format before submitting.",
+ "scenarios": [
+  {
+   "id": "01",
+   "name": "Silent Dividend",
+   "keywords": [
+    "trustsettle",
+    "nsis",
+    "electron",
+    "luajit",
+    "sepolia",
+    "wallet",
+    "env"
+   ],
+   "category": "Malware / smart-contract forensics",
+   "solve": [
+    "7z-extract the NSIS installer, unpack Electron asar",
+    "Statically deobfuscate LuaJIT FFI stealer watching C:\\Users\\Public\\.env",
+    "Find phishing page wallet drainer approve(MaxUint256)",
+    "Read Sepolia contract storage: XOR-hidden owner, dead-drop decryption key",
+    "ROL8-XOR known-plaintext on keccak256 stream-cipher payload -> coordinates"
+   ],
+   "tools": [
+    "7z",
+    "asar",
+    "ethers.js",
+    "keccak256"
+   ],
+   "writeup": "TheNorthStars-CTF/Holmes-CTF-2026-Write-ups/SilentDividend (10/10)"
+  },
+  {
+   "id": "02",
+   "name": "Bottle Out",
+   "keywords": [
+    "silvertown",
+    "xmpp",
+    "container",
+    "wiped"
+   ],
+   "category": "XMPP server forensics / anti-forensics",
+   "solve": [
+    "Wiped laptop, one comms client left",
+    "Recover operator XMPP ties from residual client artifacts"
+   ],
+   "tools": [
+    "xmpp artifacts",
+    "disk forensics"
+   ],
+   "writeup": "nyaks1/holmes-ctf-2026/BottleOut (stuck at Phase 0 — no public evidence)"
+  },
+  {
+   "id": "03",
+   "name": "Whisper Chain",
+   "keywords": [
+    "murknet",
+    "prosody",
+    "xmpp",
+    "muc",
+    "wayback",
+    "pbkdf2"
+   ],
+   "category": "Threat intel / live-service recon",
+   "solve": [
+    "TLS SAN on murknet.htb -> in-band XEP-0077 registration",
+    "Scrape MUC, rotate passwords, read PDF metadata",
+    "XEP-0048 bookmarks; idle-and-get-invited",
+    "Recover 18 operator commands via Wayback CDX API",
+    "PBKDF2-120k + AES-CBC decrypt"
+   ],
+   "tools": [
+    "python xmpp libs",
+    "Wayback CDX",
+    "PBKDF2/AES-CBC"
+   ],
+   "writeup": "TheNorthStars .../whisper-chain (8/8, solve.py)"
+  },
+  {
+   "id": "05",
+   "name": "Poisoned Branch",
+   "keywords": [
+    "diogenes-ticket-parser",
+    "mettle",
+    "auditd",
+    "bkcrack",
+    "loot.zip",
+    "uac"
+   ],
+   "category": "Linux DFIR + live exploitation tail",
+   "solve": [
+    "UAC triage of poisoned repo: XOR-implant in ~/.cache/.ticket-parser/.integrity",
+    "C2 blackpearl2026.htb:31337",
+    "Decode auditd aN=hex args — attacker's hostname + operator cookie verbatim",
+    "Replay path traversal, steal SSH key",
+    "bkcrack ZipCrypto known-plaintext on LOOT.zip"
+   ],
+   "tools": [
+    "auditd decoder",
+    "UAC",
+    "bkcrack"
+   ],
+   "writeup": "TheNorthStars .../PoisonedBranch (15Q + final HTB{P0150N3D_BR4NCH_N3V3R_D135}, solve.py)"
+  },
+  {
+   "id": "06",
+   "name": "Silent Passenger",
+   "keywords": [
+    "topway",
+    "allwinner",
+    "twcore",
+    "mqtt",
+    "head unit",
+    "ota",
+    "gps"
+   ],
+   "category": "Android/automotive forensics + reversing",
+   "solve": [
+    "TOPWAY/Allwinner T3 Android head unit",
+    "TWCore OTA client hardcoded MQTT creds -> malicious retained topic",
+    "Unnest APK->JAR->sdk.jar->proxy payloads",
+    "Impersonate C2 module, read proxied traffic",
+    "Custom RSA/AES protocol -> GPS coordinates"
+   ],
+   "tools": [
+    "jadx/DEX",
+    "MQTT client",
+    "binary framing"
+   ],
+   "writeup": "TheNorthStars .../SilentPassenger (20/20, solve.py)"
+  },
+  {
+   "id": "09",
+   "name": "LastLight / DIOGENES",
+   "keywords": [
+    "memory.elf",
+    "ntds",
+    "evtx",
+    "volatility",
+    "dcsync",
+    "golden ticket",
+    "rbcd",
+    "tier0"
+   ],
+   "category": "AD memory forensics / DFIR",
+   "solve": [
+    "Volatility3 on 3.2GB DC memory.elf (pstree, netscan)",
+    "Security/Sysmon EVTX + NTDS IFM",
+    "UPN-spoof password reset, defragsvc implant, stolen Tier0 token",
+    "DCSync + Golden Ticket + RBCD backdoor chain",
+    "impacket secretsdump, ccache carving, dissect.esedb ATTp592006 sd_table trick"
+   ],
+   "tools": [
+    "volatility3",
+    "impacket",
+    "dissect"
+   ],
+   "writeup": "TheNorthStars .../LastLight (10Q + final HTB{3v3n_Th3_F0g_Kn0ws_D10g3n3s}, solve.py)"
+  }
+ ],
+ "unknown": [
+  "04",
+  "07",
+  "08",
+  "10 — exist but no public writeups located as of this corpus"
+ ],
+ "core_skills": [
+  "static unpacking (NSIS/asar/PyInstaller/APK nesting)",
+  "Windows DFIR: EVTX, Volatility3, NTDS, Kerberos (Golden Ticket/RBCD/DCSync/ccache)",
+  "Linux DFIR: auditd hex decode, UAC, shell-history forensics",
+  "network: XMPP (Prosody XEPs), MQTT C2, TLS SAN",
+  "crypto: bkcrack, ROL8-XOR cribs, PBKDF2+AES-CBC, keccak256",
+  "blockchain: Sepolia storage reads, hidden owner XOR",
+  "OSINT: Wayback CDX"
+ ]
+}
