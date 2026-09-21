@@ -35,3 +35,12 @@
       await bg({ tool: 'ALARM', name, minutes: +minutes, message: message || name });
       return 'Alarm "' + name + '" in ' + minutes + 'm.';
     },
+    async export() {
+      const all = await chrome.storage.local.get(null);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' }));
+      await chrome.downloads.download({ url, filename: 'athelgard-vault-export.json' });
+      return 'Vault exported.';
+    }
+  };
+  window.athelgard = Object.assign(window.athelgard || {}, { tools });
+})();
