@@ -16,7 +16,8 @@ const listeners = { page: [], side: [] };
 const store = { local: {}, session: {} };
 const mkStorage = b => ({
   get: (d) => Promise.resolve({ ...d, ...(store[b] || {}) }),
-  set: (p) => { Object.assign(store[b] || (store[b] = {}), p); return Promise.resolve(); }
+  set: (p) => { Object.assign(store[b] || (store[b] = {}), p); return Promise.resolve(); },
+  remove: (k) => { const o = store[b] || {}; (Array.isArray(k) ? k : [k]).forEach(x => delete o[x]); return Promise.resolve(); }
 });
 function deliver(kind, m) { (listeners[kind] || []).forEach(f => { try { f(m, {}, () => {}); } catch (e) {} }); }
 function runPageAction(m) {
@@ -34,49 +35,3 @@ function runPageAction(m) {
     el.value = m.value; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
     return { ok: 'filled ' + m.selector };
   }
-  if (m.action === 'SCROLL_TEXT') {
-    const w = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT); let n;
-    while ((n = w.nextNode())) { const i = n.textContent.indexOf(m.text); if (i >= 0) { n.parentElement.scrollIntoView({ block: 'center' }); return { ok: 'scrolled to "' + m.text + '"' }; } }
-    return { error: 'text not found' };
-  }
-  if (m.action === 'EXTRACT') return { ok: true, title: doc.title, text: doc.body.innerText.slice(0, 20000) };
-  return { error: 'unknown action' };
-}
-function hub(m, from) {
-  if (m.type === 'PAGE_CONTEXT') { store.session.lastContext = { ...m, at: Date.now() }; if (from !== 'side') deliver('side', m); return; }
-  if (m.type === 'STAGE_FLAG') {
-    const arr = store.local.stagedFlags || (store.local.stagedFlags = []);
-    if (!arr.some(x => x.flag === m.flag.flag)) arr.push({ ...m.flag, stagedAt: Date.now(), status: 'STAGED', by: 'athelgard' });
-    deliver('side', { type: 'FLAGS_UPDATED', flags: arr });
-    return;
-  }
-  if (m.type === 'APPROVE_FLAG' || m.type === 'DISCARD_FLAG') {
-    const arr = store.local.stagedFlags || [];
-    const f = arr.find(x => x.flag === m.flag);
-    if (f) f.status = m.type === 'APPROVE_FLAG' ? 'APPROVED' : 'DISCARDED';
-    deliver('side', { type: 'FLAGS_UPDATED', flags: arr });
-    return;
-  }
-  if (m.type === 'TOOL_ACTION') { runPageAction(m); return; }
-  const to = from === 'page' ? 'side' : 'page';
-  deliver(to, m);
-}
-window.setChrome = function (kind) {
-  return {
-    storage: { local: mkStorage('local'), session: mkStorage('session') },
-    runtime: {
-      sendMessage: (m) => { hub(m, kind); return Promise.resolve(); },
-      onMessage: { addListener: (f) => listeners[kind].push(f) }
-    },
-    tabs: { query: () => Promise.resolve([{ id: 1 }]), sendMessage: (id, m) => { hub(m, 'side'); return Promise.resolve(); } }
-  };
-};
-</script>
-</head>
-<body>
-<div id="bar">🦉 <b>ATHELGARD SIDECAR v2 — live demo</b> · left: fake Holmes challenge page · right: real sidecar (panel + skills + tools) · try: <code>!help</code> <code>!scan</code> <code>!click #burn</code> <code>!fill #opnote done</code></div>
-<div id="split">
-  <iframe id="page" src="demo/fake-page.html"></iframe>
-  <iframe id="side" src="demo/demo-sidecar.html"></iframe>
-</div>
-</body></html>
