@@ -1,4 +1,4 @@
-// Athelgard Sidecar — panel logic: chat, page awareness, flag pipeline
+// Athelgard Sidecar — panel logic: chat, page awareness, flag pipeline, playbook
 const log = document.getElementById('log');
 const input = document.getElementById('input');
 const flagList = document.getElementById('flagList');
@@ -19,15 +19,49 @@ async function remember(entry) {
   await chrome.storage.local.set({ memory: memory.slice(-500) });
 }
 
-/* ---- brain: any OpenAI-compatible endpoint (options page) ---- */
+/* ---- playbook: Holmes 2026 corpus, matched against the live page ---- */
+let playbook = null;
+async function loadPlaybook() {
+  if (playbook) return playbook;
+  try { playbook = await fetch('playbook.json').then(r => r.json()); }
+  catch (e) { playbook = { scenarios: [], answer_hygiene: '' }; }
+  return playbook;
+}
+async function playbookHints(ctx) {
+  const pb = await loadPlaybook();
+  const hay = ((ctx.title || '') + ' ' + (ctx.textHead || '')).toLowerCase();
+  const hits = pb.scenarios.filter(s =>
+    s.keywords.some(k => hay.includes(k.toLowerCase()))
+  );
+  if (!hits.length) return '';
+  return 'PLAYBOOK MATCH (Holmes 2026 corpus): ' + hits.map(s =>
+    '[Sherlock ' + s.id + ' ' + s.name + ' — ' + s.category + '. Solve: ' + s.solve.join(' | ') +
+    '. Tools: ' + s.tools.join(',') + '. Writeup: ' + s.writeup + ']'
+  ).join(' ') + ' ANSWER HYGIENE: ' + pb.answer_hygiene;
+}
+
+/* ---- brain: OpenAI-compatible endpoint OR the Kinetigor battleterminal (/api/kin) ---- */
 async function think(userText, context) {
   const cfg = await chrome.storage.local.get(['brainUrl', 'brainKey', 'brainModel', 'operatorName']);
+  const hints = await playbookHints(context);
   if (!cfg.brainUrl) {
-    return 'Brain not wired. Open extension options and set an OpenAI-compatible endpoint (local Ollama works: http://localhost:11434/v1/chat/completions). I will still track flags and page context meanwhile.';
+    return 'Brain not wired. Options → set an OpenAI-compatible endpoint, or point me at the Kinetigor battleterminal: https://makothoth.dev/api/kin' +
+      (hints ? '\n\n' + hints : '');
   }
   const sys = 'You are Athelgard, a CTF teammate in the operator\'s browser side panel. ' +
     'You share the page they are looking at. Be terse, technical, flag-first. ' +
     'When you spot a flag pattern, say FLAG: <flag>. Operator: ' + (cfg.operatorName || 'Captain') + '.';
+
+  // Kinetigor battleterminal adapter (KIN mentor mesh, serverless)
+  if (cfg.brainUrl.includes('/api/kin')) {
+    const res = await fetch(cfg.brainUrl, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: sys + '\n\n' + (hints ? hints + '\n\n' : '') + 'PAGE: ' + JSON.stringify(context).slice(0, 3000) + '\n\nOPERATOR: ' + userText })
+    });
+    const data = await res.json();
+    return data.reply || '(empty reply from KIN mesh)';
+  }
+
   const res = await fetch(cfg.brainUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(cfg.brainKey ? { Authorization: 'Bearer ' + cfg.brainKey } : {}) },
@@ -35,7 +69,7 @@ async function think(userText, context) {
       model: cfg.brainModel || 'athelgard',
       messages: [
         { role: 'system', content: sys },
-        { role: 'user', content: 'PAGE: ' + JSON.stringify(context).slice(0, 3000) + '\n\nOPERATOR: ' + userText }
+        { role: 'user', content: (hints ? hints + '\n\n' : '') + 'PAGE: ' + JSON.stringify(context).slice(0, 3000) + '\n\nOPERATOR: ' + userText }
       ]
     })
   });
@@ -57,7 +91,6 @@ document.getElementById('composer').addEventListener('submit', async (e) => {
     typing.lastChild.textContent = ''; typing.appendChild(document.createTextNode(reply));
     log.scrollTop = log.scrollHeight;
     await remember({ role: 'operator', text }, { reply });
-    // flag capture from her own words
     const m = reply.match(/FLAG:\s*(\S+\{[^}]+\})/);
     if (m) stageFlag(m[1], 'chat');
   } catch (err) {
@@ -92,7 +125,7 @@ function renderFlags(flags) {
     const approve = document.createElement('button'); approve.textContent = 'Approve';
     approve.onclick = () => {
       chrome.runtime.sendMessage({ type: 'APPROVE_FLAG', flag: f.flag });
-      navigator.clipboard.writeText(f.flag); // ready to paste into the scoreboard
+      navigator.clipboard.writeText(f.flag);
     };
     const copy = document.createElement('button'); copy.textContent = 'Copy';
     copy.onclick = () => navigator.clipboard.writeText(f.flag);
@@ -103,10 +136,13 @@ function renderFlags(flags) {
 
 /* ---- boot: reload state so nothing is lost between sessions ---- */
 (async () => {
+  loadPlaybook();
   const { stagedFlags = [] } = await chrome.storage.local.get('stagedFlags');
   renderFlags(stagedFlags);
   const { memory = [] } = await chrome.storage.local.get('memory');
-  say('System', 'Athelgard sidecar up. ' + stagedFlags.length + ' flag(s) in pipeline, ' + memory.length + ' memories in vault.');
+  const pb = await loadPlaybook();
+  say('System', 'Athelgard sidecar up. ' + stagedFlags.length + ' flag(s) in pipeline, ' + memory.length +
+    ' memories in vault, playbook loaded (' + pb.scenarios.length + ' Holmes 2026 scenarios).');
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab) chrome.tabs.sendMessage(tab.id, { type: 'GET_CONTEXT' }).catch(() => {});
 })();
