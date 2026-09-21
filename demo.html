@@ -10,8 +10,7 @@ iframe{border:0;height:100%}
 #side{width:380px;border-left:2px solid #a371f7}
 </style>
 <script>
-// ---- Mock extension runtime, defined BEFORE iframes load. ----
-// Parent tab plays background.js: squad bus + flag pipeline + TOOL_ACTION executor.
+// Mock extension runtime in the parent (plays background.js).
 const listeners = { page: [], side: [] };
 const store = { local: {}, session: {} };
 const mkStorage = b => ({
@@ -22,16 +21,50 @@ const mkStorage = b => ({
 function deliver(kind, m) { (listeners[kind] || []).forEach(f => { try { f(m, {}, () => {}); } catch (e) {} }); }
 function runPageAction(m) {
   const doc = document.getElementById('page').contentDocument;
-  if (!doc) return { error: 'no page' };
-  if (m.action === 'CLICK') {
-    const el = doc.querySelector(m.selector);
-    if (!el) return { error: 'not found: ' + m.selector };
-    el.scrollIntoView({ block: 'center' }); el.click();
-    return { ok: 'clicked ' + m.selector };
+  if (!doc) return;
+  if (m.action === 'CLICK') { const el = doc.querySelector(m.selector); if (el) { el.scrollIntoView({ block: 'center' }); el.click(); } }
+  if (m.action === 'FILL') { const el = doc.querySelector(m.selector); if (el) { el.value = m.value; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } }
+  if (m.action === 'SCROLL_TEXT') {
+    const w = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) { const i = n.textContent.indexOf(m.text); if (i >= 0) { n.parentElement.scrollIntoView({ block: 'center' }); break; } }
   }
-  if (m.action === 'FILL') {
-    const el = doc.querySelector(m.selector);
-    if (!el) return { error: 'not found: ' + m.selector };
-    el.value = m.value; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true }));
-    return { ok: 'filled ' + m.selector };
+  if (m.action === 'EXTRACT') { store.session.extract = { title: doc.title, text: doc.body.innerText.slice(0, 20000) }; }
+}
+function hub(m, from) {
+  if (m.type === 'PAGE_CONTEXT') { store.session.lastContext = { ...m, at: Date.now() }; if (from !== 'side') deliver('side', m); return; }
+  if (m.type === 'STAGE_FLAG') {
+    const arr = store.local.stagedFlags || (store.local.stagedFlags = []);
+    if (!arr.some(x => x.flag === m.flag.flag)) arr.push({ ...m.flag, stagedAt: Date.now(), status: 'STAGED', by: 'athelgard' });
+    deliver('side', { type: 'FLAGS_UPDATED', flags: arr });
+    return;
   }
+  if (m.type === 'APPROVE_FLAG' || m.type === 'DISCARD_FLAG') {
+    const arr = store.local.stagedFlags || [];
+    const f = arr.find(x => x.flag === m.flag);
+    if (f) f.status = m.type === 'APPROVE_FLAG' ? 'APPROVED' : 'DISCARDED';
+    deliver('side', { type: 'FLAGS_UPDATED', flags: arr });
+    return;
+  }
+  if (m.type === 'TOOL_ACTION') { runPageAction(m); return; }
+  const to = from === 'page' ? 'side' : 'page';
+  deliver(to, m);
+}
+window.setChrome = function (kind) {
+  return {
+    storage: { local: mkStorage('local'), session: mkStorage('session') },
+    runtime: {
+      sendMessage: (m) => { hub(m, kind); return Promise.resolve(); },
+      onMessage: { addListener: (f) => listeners[kind].push(f) }
+    },
+    tabs: { query: () => Promise.resolve([{ id: 1 }]), sendMessage: (id, m) => { hub(m, 'side'); return Promise.resolve(); } }
+  };
+};
+</script>
+</head>
+<body>
+<div id="bar">🦉 <b>ATHELGARD SIDECAR v2 — live demo</b> · left: fake Holmes challenge page · right: real sidecar · try: <code>!path</code> <code>!drill nmap</code> <code>!scan</code> <code>!click #burn</code></div>
+<div id="split">
+  <iframe id="page" src="demo/fake-page.html"></iframe>
+  <iframe id="side" src="demo/demo-sidecar.html"></iframe>
+</div>
+</body></html>
