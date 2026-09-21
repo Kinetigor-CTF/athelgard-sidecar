@@ -27,32 +27,10 @@ const mkStorage = b => ({
 function deliver(kind, m) { (listeners[kind] || []).forEach(f => { try { f(m, {}, () => {}); } catch (e) {} }); }
 function hub(m, from) {
   // mirrors background.js
-  if (m.type === 'PAGE_CONTEXT') { store.session.lastContext = { ...m, at: Date.now() }; return; }
+  if (m.type === 'PAGE_CONTEXT') { store.session.lastContext = { ...m, at: Date.now() }; if (from !== 'side') deliver('side', m); return; }
   if (m.type === 'STAGE_FLAG') {
     const arr = store.local.stagedFlags || (store.local.stagedFlags = []);
     arr.push({ ...m.flag, stagedAt: Date.now(), status: 'STAGED', by: 'athelgard' });
     deliver('side', { type: 'FLAGS_UPDATED', flags: arr });
     return;
   }
-  if (m.type === 'APPROVE_FLAG' || m.type === 'DISCARD_FLAG') {
-    const arr = store.local.stagedFlags || [];
-    const f = arr.find(x => x.flag === m.flag);
-    if (f) f.status = m.type === 'APPROVE_FLAG' ? 'APPROVED' : 'DISCARDED';
-    deliver('side', { type: 'FLAGS_UPDATED', flags: arr });
-    return;
-  }
-  const to = from === 'page' ? 'side' : 'page';
-  deliver(to, m);
-}
-window.setChrome = function (kind) {
-  return {
-    storage: { local: mkStorage('local'), session: mkStorage('session') },
-    runtime: {
-      sendMessage: (m) => { hub(m, kind); return Promise.resolve(); },
-      onMessage: { addListener: (f) => listeners[kind].push(f) }
-    },
-    tabs: { query: () => Promise.resolve([{ id: 1 }]), sendMessage: () => Promise.resolve() }
-  };
-};
-</script>
-</body></html>
