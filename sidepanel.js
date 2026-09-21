@@ -1,3 +1,13 @@
+
+
+/* ---- v4.1 PASTE-CAPTURE: anything the operator pastes with flag-shaped content gets staged ---- */
+document.getElementById('composer').addEventListener('submit', () => {
+  setTimeout(() => {
+    const all = [...log.querySelectorAll('.msg.you')].map(m => m.textContent).join('\n');
+    for (const f of new Set(all.match(/(?:HTB|FLAG|CTF|cyberhx)\{[^}\s]{4,80}\}/g) || [])) stageFlag(f, 'operator-paste');
+    for (const f of new Set(all.match(/\b[a-f0-9]{32}\b/g) || [])) stageFlag(f, 'operator-paste-hash');
+  }, 150);
+});
 // Athelgard Sidecar v4 — chat, tools, playbook, DRILLS, rank path
 const log = document.getElementById('log');
 const input = document.getElementById('input');
